@@ -1,0 +1,8 @@
+Metadata-Version: 2.1
+Name: mlproject
+Version: 1.0
+Author: yogeswara datta
+Author-email: diduguyogi01052002@gmail.com
+Requires-Dist: pandas
+Requires-Dist: numpy
+Requires-Dist: seaborn
