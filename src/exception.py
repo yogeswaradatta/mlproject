@@ -19,4 +19,10 @@ class CustomException(Exception):
         return self.error_message
     
 
-    
+#try:
+   # a = 10
+   # b = 0
+    #c = a / b   # Will raise ZeroDivisionError
+
+#except Exception as e:
+   # raise CustomException(e, sys)    
