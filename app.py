@@ -3,6 +3,18 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from src.pipeline.predict_pipeline import CustomData,PredictPipeline
+import os
+from src.pipeline.train_pipeline import TrainPipeline
+
+if not os.path.exists("artifacts/model.pkl"):
+
+    print("Training model...")
+
+    pipeline = TrainPipeline()
+
+    pipeline.run_pipeline()
+
+    print("Training completed")
 
 application=Flask(__name__)
 app=application
@@ -31,6 +43,8 @@ def predict_datapoint():
         Predict_Pipeline=PredictPipeline()
         results=Predict_Pipeline.predict(pred_df)
         return render_template('home.html',results=results[0])
+    
+    
     
 if __name__ == "__main__":
     print("Starting Flask Server...")
