@@ -75,55 +75,35 @@ jobs:
 
   # ---------------- DEPLOY ----------------
   Continuous-Deployment:
-    name: Deploy to EC2 (Self Hosted)
     needs: build-and-push-ecr-image
     runs-on: self-hosted
-
     steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Get AWS Account ID & set ECR registry
-        run: |
-          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-          echo "ECR_REGISTRY=$ACCOUNT_ID.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com" >> $GITHUB_ENV
-
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Debug image values
+        uses: aws-actions/amazon-ecr-login@v1
+      
+      
+      - name: Pull latest images
         run: |
-          echo "ECR_REGISTRY=$ECR_REGISTRY"
-          echo "ECR_REPOSITORY=${{ secrets.ECR_REPOSITORY_NAME }}"       
-
-      - name: Pull Docker image
+         docker pull ${{secrets.AWS_ECR_LOGIN_URI}}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
+         
+      # - name: Stop and remove  container if running
+      #   run: |
+      #    docker ps -q --filter "name=mltest" | grep -q . && docker stop mltest && docker rm -fv mltest
+       
+      - name: Run Docker Image to serve users
         run: |
-          docker pull $ECR_REGISTRY/${{ secrets.ECR_REPOSITORY_NAME }}:latest
-
-      - name: Stop old container
+         docker run -d -p 8080:8080 --ipc="host" --name=mltest -e 'AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}' -e 'AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}' -e 'AWS_REGION=${{ secrets.AWS_REGION }}'  ${{secrets.AWS_ECR_LOGIN_URI}}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
+      - name: Clean previous images and containers
         run: |
-          docker stop studentperformance || true
-          docker rm studentperformance || true
-
-      - name: Run new container
-        run: |
-          docker run -d \
-            --name studentperformance \
-            --restart unless-stopped \
-            --ipc="host" \
-            -p 8080:8080 \
-            -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \
-            -e AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
-            -e AWS_REGION=${{ secrets.AWS_REGION }} \
-            $ECR_REGISTRY/${{ secrets.ECR_REPOSITORY_NAME }}:latest
-
-      - name: Verify container
-        run: docker ps
-
-      - name: Clean Docker system
-        run: docker system prune -af
+         docker system prune -f
