@@ -101,13 +101,13 @@ jobs:
 
       - name: Stop old container
         run: |
-          docker stop mltest || true
-          docker rm mltest || true
+          docker stop studentperformance || true
+          docker rm studentperformance || true
 
       - name: Run new container
         run: |
           docker run -d \
-            --name mltest \
+            --name studentperformance \
             --restart unless-stopped \
             --ipc="host" \
             -p 8080:8080 \
