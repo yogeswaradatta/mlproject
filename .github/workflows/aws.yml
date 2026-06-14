@@ -86,18 +86,24 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-      - name: Debug image values
+
+      - name: Get AWS Account ID & set ECR registry
         run: |
-          echo "Registry=${{ steps.login-ecr.outputs.registry }}"
-          echo "Repository=${{ secrets.ECR_REPOSITORY_NAME }}"
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          echo "ECR_REGISTRY=$ACCOUNT_ID.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com" >> $GITHUB_ENV
 
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      - name: Debug image values
+        run: |
+          echo "ECR_REGISTRY=$ECR_REGISTRY"
+          echo "ECR_REPOSITORY=${{ secrets.ECR_REPOSITORY_NAME }}"       
+
       - name: Pull Docker image
         run: |
-          docker pull ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
+          docker pull $ECR_REGISTRY/${{ secrets.ECR_REPOSITORY_NAME }}:latest
 
       - name: Stop old container
         run: |
